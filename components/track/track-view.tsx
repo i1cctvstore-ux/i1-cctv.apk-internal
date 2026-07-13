@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ChevronLeft, FileText, X, ChevronLeft as ChevLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, FileText, ImageOff, X, ChevronLeft as ChevLeft, ChevronRight } from 'lucide-react'
 import {
   STAGES,
   STAGE_STATUS_LABEL,
@@ -61,6 +61,15 @@ export function TrackView() {
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('log')
   const [lightbox, setLightbox] = useState<{ logIndex: number; photoIndex: number } | null>(null)
+  const [brokenPhotos, setBrokenPhotos] = useState<Set<string>>(new Set())
+
+  function markBroken(url: string) {
+    setBrokenPhotos((prev) => {
+      const next = new Set(prev)
+      next.add(url)
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!id) {
@@ -263,16 +272,27 @@ export function TrackView() {
                         </p>
                         {log.photo_urls.length > 0 ? (
                           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-                            {log.photo_urls.map((url, photoIndex) => (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                key={url}
-                                src={url}
-                                alt={log.title}
-                                onClick={() => setLightbox({ logIndex, photoIndex })}
-                                className="size-16 shrink-0 cursor-pointer rounded-[9px] object-cover"
-                              />
-                            ))}
+                            {log.photo_urls.map((url, photoIndex) =>
+                              brokenPhotos.has(url) ? (
+                                <div
+                                  key={url}
+                                  className="flex size-16 shrink-0 flex-col items-center justify-center gap-1 rounded-[9px] bg-[#eef1f5] text-[#a3aebc]"
+                                >
+                                  <ImageOff className="size-4" aria-hidden="true" />
+                                  <span className="text-[8px]">Gagal muat</span>
+                                </div>
+                              ) : (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  key={url}
+                                  src={url}
+                                  alt={log.title}
+                                  onClick={() => setLightbox({ logIndex, photoIndex })}
+                                  onError={() => markBroken(url)}
+                                  className="size-16 shrink-0 cursor-pointer rounded-[9px] bg-[#eef1f5] object-cover"
+                                />
+                              )
+                            )}
                           </div>
                         ) : null}
                       </div>
